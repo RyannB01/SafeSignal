@@ -1,0 +1,33 @@
+[build]
+command = "export DATABASE_URL=\"${NETLIFY_DATABASE_URL:-$DATABASE_URL}\" && NITRO_PRESET=netlify pnpm build && if [ \"${CONTEXT:-}\" = \"production\" ]; then pnpm migrate:production; fi"
+publish = "dist"
+functions = ".netlify/functions-internal"
+
+[build.environment]
+GA_MEASUREMENT_ID = "G-ESF7FYXGN9"
+GTM_CONTAINER_ID = "GTM-N3WSTXZ"
+NITRO_PRESET = "netlify"
+NPM_CONFIG_PRODUCTION = "false"
+
+[context.production.environment]
+AGENT_NATIVE_HOSTED_HARNESS = "true"
+AGENT_NATIVE_DISABLE_KEEP_WARM_BACKGROUND = "1"
+BETTER_AUTH_TRUSTED_ORIGINS = "https://starter.agent-native.com,https://chat.agent-native.com"
+# Production release migrations own schema setup; request functions must skip
+# migration probes on every serverless invocation.
+AGENT_NATIVE_RELEASE_MIGRATIONS = "1"
+
+# Security headers for the deployed site. CSP is deliberately permissive
+# about inline scripts: the app ships an inline theme/locale init script
+# and loads face-api.js from jsDelivr, so 'unsafe-inline' plus the CDN
+# origin are required. Verify the CSP in a real browser on first deploy;
+# if anything is blocked, loosen it there rather than removing it here.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    Strict-Transport-Security = "max-age=63072000; includeSubDomains; preload"
+    X-Content-Type-Options = "nosniff"
+    X-Frame-Options = "SAMEORIGIN"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(self), microphone=(self), geolocation=()"
+    Content-Security-Policy = "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self'; connect-src 'self' ws: wss:; media-src 'self' blob:; object-src 'none'; base-uri 'self'; frame-ancestors 'self'; form-action 'self'"
